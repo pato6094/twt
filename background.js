@@ -1,60 +1,136 @@
 'use strict';
 
-const beforeSendHeadersOptions = [ 'requestHeaders', 'blocking' ];
+// Manifest V3 service worker compatible background script
+chrome.runtime.onInstalled.addListener(() => {
+  setupDeclarativeNetRequestRules();
+});
 
-for (const option of Object.keys(chrome.webRequest.OnBeforeSendHeadersOptions)) {
-	if (chrome.webRequest.OnBeforeSendHeadersOptions[option] === 'extraHeaders') {
-		beforeSendHeadersOptions.push('extraHeaders');
-		break;
-	}
+async function setupDeclarativeNetRequestRules() {
+  // Remove old rules first
+  const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
+  const existingRuleIds = existingRules.map(rule => rule.id);
+
+  if (existingRuleIds.length > 0) {
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: existingRuleIds
+    });
+  }
+
+  // Add new rules
+  const rules = [
+    // Rule 1: Add Origin and Referer headers for requests from extension
+    {
+      id: 1,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [
+          { header: 'Origin', operation: 'set', value: 'https://www.twitch.tv' },
+          { header: 'Referer', operation: 'set', value: 'https://www.twitch.tv/' }
+        ]
+      },
+      condition: {
+        urlFilter: '*://*.twitch.tv/*',
+        initiatorDomains: [chrome.runtime.id],
+        resourceTypes: ['xmlhttprequest']
+      }
+    },
+    {
+      id: 2,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [
+          { header: 'Origin', operation: 'set', value: 'https://www.twitch.tv' },
+          { header: 'Referer', operation: 'set', value: 'https://www.twitch.tv/' }
+        ]
+      },
+      condition: {
+        urlFilter: '*://*.ttvnw.net/*',
+        initiatorDomains: [chrome.runtime.id],
+        resourceTypes: ['xmlhttprequest']
+      }
+    },
+    {
+      id: 3,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [
+          { header: 'Origin', operation: 'set', value: 'https://www.twitch.tv' },
+          { header: 'Referer', operation: 'set', value: 'https://www.twitch.tv/' }
+        ]
+      },
+      condition: {
+        urlFilter: '*://*.jtvnw.net/*',
+        initiatorDomains: [chrome.runtime.id],
+        resourceTypes: ['xmlhttprequest']
+      }
+    },
+    // Rule 4-7: Remove X-Frame-Options and CSP headers for chat embeds
+    {
+      id: 4,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        responseHeaders: [
+          { header: 'X-Frame-Options', operation: 'remove' },
+          { header: 'Content-Security-Policy', operation: 'remove' }
+        ]
+      },
+      condition: {
+        urlFilter: 'https://www.twitch.tv/popout/*/chat*',
+        resourceTypes: ['sub_frame']
+      }
+    },
+    {
+      id: 5,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        responseHeaders: [
+          { header: 'X-Frame-Options', operation: 'remove' },
+          { header: 'Content-Security-Policy', operation: 'remove' }
+        ]
+      },
+      condition: {
+        urlFilter: 'https://www.twitch.tv/embed/*/chat*',
+        resourceTypes: ['sub_frame']
+      }
+    },
+    {
+      id: 6,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        responseHeaders: [
+          { header: 'X-Frame-Options', operation: 'remove' },
+          { header: 'Content-Security-Policy', operation: 'remove' }
+        ]
+      },
+      condition: {
+        urlFilter: 'https://www.twitch.tv/*/chat*',
+        resourceTypes: ['sub_frame']
+      }
+    },
+    {
+      id: 7,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        responseHeaders: [
+          { header: 'X-Frame-Options', operation: 'remove' },
+          { header: 'Content-Security-Policy', operation: 'remove' }
+        ]
+      },
+      condition: {
+        urlFilter: 'https://www.twitch.tv/popout/*',
+        resourceTypes: ['sub_frame']
+      }
+    }
+  ];
+
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    addRules: rules
+  });
 }
-
-chrome.webRequest.onBeforeSendHeaders.addListener(request => {
-	if (request.frameId !== 0 || request.parentFrameId !== -1) {
-		return;
-	}
-	const initiator = request.initiator || request.originUrl || request.documentUrl;
-	if (!initiator || !initiator.startsWith(chrome.runtime.getURL('').slice(0, -1))) {
-		return;
-	}
-	const remove = [ 'origin', 'referer' ];
-	const requestHeaders = request.requestHeaders.filter(({name}) => !remove.includes(name.toLowerCase()));
-	requestHeaders.push({
-		name: 'Origin',
-		value: 'https://www.twitch.tv'
-	}, {
-		name: 'Referer',
-		value: 'https://www.twitch.tv/'
-	});
-	return {
-		requestHeaders
-	};
-}, {
-	urls: chrome.runtime.getManifest().permissions.filter(permission => permission.includes(':')),
-	types: [ 'xmlhttprequest' ]
-}, beforeSendHeadersOptions);
-
-const headersReceivedOptions = [ 'responseHeaders', 'blocking' ];
-
-for (const option of Object.keys(chrome.webRequest.OnHeadersReceivedOptions)) {
-	if (chrome.webRequest.OnHeadersReceivedOptions[option] === 'extraHeaders') {
-		headersReceivedOptions.push('extraHeaders');
-		break;
-	}
-}
-
-//! Removes HTTP response headers that prevent the document from loading into <iframe>.
-chrome.webRequest.onHeadersReceived.addListener(response => {
-	if (response.frameId <= 0 || response.parentFrameId !== 0) {
-		return;
-	}
-	return {
-		responseHeaders: response.responseHeaders.filter(({name, value}) => {
-			const headerName = name.toLowerCase();
-			return headerName !== 'x-frame-options' && (headerName !== 'content-security-policy' || !value.toLowerCase().includes('frame-ancestors'));
-		})
-	};
-}, {
-	urls: [ 'https://www.twitch.tv/popout/*/chat', 'https://www.twitch.tv/embed/*/chat', 'https://www.twitch.tv/*/chat?*', 'https://www.twitch.tv/popout/' ],
-	types: [ 'sub_frame' ]
-}, headersReceivedOptions);
