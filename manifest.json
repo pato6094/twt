@@ -1,0 +1,43 @@
+{
+   "author": "Alexander Choporov (CoolCmd)",
+   "background": {
+      "persistent": true,
+      "scripts": [ "background.js" ]
+   },
+   "content_scripts": [ {
+      "all_frames": true,
+      "exclude_matches": [ "https://www.twitch.tv/popout/" ],
+      "js": [ "autoclaim.js" ],
+      "matches": [ "https://www.twitch.tv/*" ],
+      "run_at": "document_idle"
+   }, {
+      "all_frames": true,
+      "js": [ "gqltoken.js" ],
+      "matches": [ "https://www.twitch.tv/*" ],
+      "run_at": "document_start"
+   }, {
+      "all_frames": true,
+      "exclude_matches": [ "https://www.twitch.tv/popout/" ],
+      "js": [ "common.js", "content.js" ],
+      "matches": [ "https://www.twitch.tv/*", "https://m.twitch.tv/*" ],
+      "run_at": "document_start"
+   } ],
+   "content_security_policy": "script-src 'self' 'wasm-eval'; object-src 'self'",
+   "default_locale": "en",
+   "description": "__MSG_M0001__",
+   "differential_fingerprint": "1.bf5571354dd5a6ed2be1bd87f573353f05966503fcff4e00cb931499f01e295a",
+   "icons": {
+      "128": "manifest.png"
+   },
+   "incognito": "split",
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1gkPWhu5vgon5TFeDVT+hC9n1gPcbTIrmLBxz5oKuQBZVB/yGzAZCmf6OJesFpGEs19e/633sgGePiswI4rqBczewdVL1fqxnR3KtCgfzxTvX3QQU27eBxJ94KinmVmu51qJj6Eruxl8lTZB8UqNzCHhAS6buZ1ngXEf/eUWfJAQWAY63kOEDGM9CuR5FPEubqKkpPhtZuLcLlOO0gLwG918FJ5oso8TkDJ4GmXMgMXLVluEshOifnOmwoJ1OrjGe6j6CyLnqehdX7Xv7wLR4GX8erf1vZMEwiGMOQtOiui/vnTqBsfRdSm5nKnMP6ydylvd7X816axP18+nk5cCbwIDAQAB",
+   "manifest_version": 2,
+   "minimum_chrome_version": "49",
+   "name": "Alternate Player for Twitch.tv",
+   "optional_permissions": [ "contentSettings" ],
+   "permissions": [ "storage", "cookies", "webRequest", "webRequestBlocking", "management", "system.memory", "system.cpu", "*://*.twitch.tv/*", "*://*.twitchcdn.net/*", "*://*.ttvnw.net/*", "*://*.jtvnw.net/*", "*://*.live-video.net/*", "*://*.akamaized.net/*", "*://*.cloudfront.net/*" ],
+   "short_name": "Alternate Player",
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "2025.6.16",
+   "web_accessible_resources": [ "player.html", "content.css" ]
+}
