@@ -1,9 +1,39 @@
 'use strict';
 
-// Manifest V3 service worker compatible background script
 chrome.runtime.onInstalled.addListener(() => {
   setupDeclarativeNetRequestRules();
 });
+
+chrome.runtime.onStartup.addListener(() => {
+  setupDeclarativeNetRequestRules();
+});
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.сЗапрос === 'ВставитьСторонниеРасширения') {
+    getSupportedExtensions().then(extensions => {
+      sendResponse({ сСторонниеРасширения: extensions });
+    });
+    return true;
+  }
+});
+
+async function getSupportedExtensions() {
+  let result = '';
+  try {
+    const extensions = await chrome.management.getAll();
+    for (const ext of extensions) {
+      if (!ext.enabled) continue;
+      if (ext.id === 'ajopnjidmegmdimjlfnijceegpefgped') {
+        result += 'BTTV ';
+      } else if (ext.id === 'fadndhdgpmmaapbmfcknlfgcflmmmieb') {
+        result += 'FFZ ';
+      }
+    }
+  } catch (e) {
+    console.error('Error getting extensions:', e);
+  }
+  return result;
+}
 
 async function setupDeclarativeNetRequestRules() {
   // Remove old rules first
